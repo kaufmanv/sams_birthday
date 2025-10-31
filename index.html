@@ -93,6 +93,7 @@
       <div id="audioArea">
         <!-- Visible audio element -->
         <audio id="mainAudio" preload="auto">
+          <source src="media/1031.MP3" type="audio/mpeg">
           <source src="media/1031.mp3" type="audio/mpeg">
           Your browser does not support the audio element.
         </audio>
@@ -119,21 +120,42 @@
     setStatus('Ready', false);
 
     // Play audio on first click anywhere on the page or play button
-    function playAudioOnce() {
+    function playAudioOnce(event) {
+      // Prevent event bubbling
+      event.stopPropagation();
+      
+      // Log attempt to play
+      console.log('Attempting to play audio...');
+      
+      // Check if audio is loaded
+      if (audio.readyState === 0) {
+        console.log('Audio not loaded yet');
+        setStatus('Loading audio...');
+        audio.load(); // Force load the audio
+      }
+
       audio.play().then(() => {
+        console.log('Audio playing successfully');
         playButton.classList.add('playing');
         playButton.setAttribute('aria-pressed', 'true');
         setStatus('Playing');
       }).catch(err => {
         console.error('Playback failed:', err);
-        setStatus('Playback failed');
-        alert('Click the audio controls below if needed.');
+        setStatus('Playback failed: ' + err.message);
+        
+        // Try to show more detailed error information
+        if (audio.error) {
+          console.error('Audio error code:', audio.error.code);
+          console.error('Audio error message:', audio.error.message);
+        }
       });
-      // Remove listeners after first play
+
+      // Remove listeners after first play attempt
       document.body.removeEventListener('click', playAudioOnce);
       playButton.removeEventListener('click', playAudioOnce);
     }
 
+    // Add click listeners
     document.body.addEventListener('click', playAudioOnce);
     playButton.addEventListener('click', playAudioOnce);
 
