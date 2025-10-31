@@ -25,13 +25,12 @@
     header { padding: 16px 24px; position: relative; z-index: 2; }
     .page-title { position: fixed; top: 28px; left: 50%; transform: translateX(-50%); font-size: 3.4rem; font-weight: 700; color: #222; text-shadow: 0 2px 6px rgba(255,255,255,0.6); z-index: 9; pointer-events: none; }
     .play-center { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 10; }
-    #playButton { width: 128px; height: 128px; border-radius: 50%; border: none; background: rgba(0,0,0,0.6); color: #fff; font-size: 48px; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; }
+    #playButton { width: 128px; height: 128px; border-radius: 50%; border: none; background: rgba(0,0,0,0.6); color: #fff; font-size: 48px; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; z-index:11; }
     #playButton.playing::before, #playButton.playing::after { content: ''; position: absolute; width: 10px; height: 32px; background: #fff; border-radius: 2px; top: 50%; transform: translateY(-50%); }
     #playButton.playing::before { left: calc(50% - 10px); }
     #playButton.playing::after { left: calc(50% + 10px); }
     #audioStatus { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); color: #fff; padding: 6px 10px; border-radius: 6px; font-size: 0.9rem; z-index: 11; pointer-events: none; }
-    /* keep audio visible but minimal */
-    #mainAudio { width: 300px; margin-top: 16px; display: block; }
+    #mainAudio { width: 300px; margin-top: 16px; display: block; position: relative; z-index: 11; }
   </style>
 </head>
 <body>
@@ -40,7 +39,7 @@
   <main>
     <section aria-label="audio">
       <div id="audioArea">
-        <!-- visible audio element -->
+        <!-- visible audio element for reliable playback -->
         <audio id="mainAudio" controls preload="auto">
           <source src="media/1031.mp3" type="audio/mpeg">
           Your browser does not support the audio element.
@@ -67,6 +66,7 @@
 
     setStatus('Ready', false);
 
+    // Play/pause via button click
     playButton.addEventListener('click', () => {
       if (audio.paused) {
         audio.play().then(() => {
@@ -76,7 +76,7 @@
         }).catch(err => {
           console.error('Playback failed', err);
           setStatus('Playback failed, see console');
-          alert('Audio could not start. Check console/network or browser autoplay settings.');
+          alert('Audio could not start. Click the native controls below if needed.');
         });
       } else {
         audio.pause();
@@ -85,6 +85,7 @@
       }
     });
 
+    // Reset button state when audio ends
     audio.addEventListener('ended', () => {
       playButton.classList.remove('playing');
       playButton.setAttribute('aria-pressed', 'false');
