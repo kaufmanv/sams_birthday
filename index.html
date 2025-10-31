@@ -1,4 +1,4 @@
-<!-- starter-webpage-gallery.html (grey/white theme with reliable audio playback on Vercel) -->
+<!-- starter-webpage-gallery.html (adjusted for reliable audio playback on Vercel) -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -30,6 +30,8 @@
     #playButton.playing::before { left: calc(50% - 10px); }
     #playButton.playing::after { left: calc(50% + 10px); }
     #audioStatus { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); color: #fff; padding: 6px 10px; border-radius: 6px; font-size: 0.9rem; z-index: 11; pointer-events: none; }
+    /* keep audio visible but minimal */
+    #mainAudio { width: 300px; margin-top: 16px; display: block; }
   </style>
 </head>
 <body>
@@ -37,26 +39,26 @@
   <div class="page-title">Samuel's Birthday</div>
   <main>
     <section aria-label="audio">
-      <div id="audioArea"></div>
+      <div id="audioArea">
+        <!-- visible audio element -->
+        <audio id="mainAudio" controls preload="auto">
+          <source src="media/1031.mp3" type="audio/mpeg">
+          Your browser does not support the audio element.
+        </audio>
+      </div>
     </section>
+
     <div class="play-center">
       <button id="playButton" aria-label="Play audio" aria-pressed="false">▶</button>
     </div>
+
     <div id="audioStatus" aria-live="polite" hidden>Ready</div>
   </main>
+
   <script>
-    const audioArea = document.getElementById('audioArea');
+    const audio = document.getElementById('mainAudio');
     const playButton = document.getElementById('playButton');
     const status = document.getElementById('audioStatus');
-
-    const audioFile = 'media/1031.mp3';
-
-    // Create visible audio element for reliable playback
-    const audio = document.createElement('audio');
-    audio.controls = true; // show native controls
-    audio.src = audioFile;
-    audio.preload = 'auto';
-    audioArea.appendChild(audio);
 
     function setStatus(text, visible = true) {
       status.textContent = text;
@@ -65,16 +67,16 @@
 
     setStatus('Ready', false);
 
-    playButton.addEventListener('click', function() {
+    playButton.addEventListener('click', () => {
       if (audio.paused) {
         audio.play().then(() => {
           playButton.classList.add('playing');
           playButton.setAttribute('aria-pressed', 'true');
           setStatus('Playing');
         }).catch(err => {
-          console.error('Playback failed:', err);
+          console.error('Playback failed', err);
           setStatus('Playback failed, see console');
-          alert('Audio could not start. Check console or browser autoplay settings.');
+          alert('Audio could not start. Check console/network or browser autoplay settings.');
         });
       } else {
         audio.pause();
