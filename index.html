@@ -78,8 +78,37 @@
       justify-content: center;
       box-shadow: 0 8px 24px rgba(0,0,0,0.35);
       cursor: pointer;
+      position: relative;
     }
     #playButton.playing { background: rgba(200,0,0,0.9); }
+    /* play triangle using pseudo-element */
+    #playButton::before {
+      content: '';
+      position: absolute;
+      width: 0;
+      height: 0;
+      border-left: 22px solid #fff;
+      border-top: 14px solid transparent;
+      border-bottom: 14px solid transparent;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      transition: transform 120ms ease, opacity 120ms ease;
+    }
+    /* pause bars when playing */
+    #playButton.playing::before,
+    #playButton.playing::after {
+      content: '';
+      position: absolute;
+      width: 10px;
+      height: 32px;
+      background: #fff;
+      border-radius: 2px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    #playButton.playing::before { left: calc(50% - 10px); }
+    #playButton.playing::after { left: calc(50% + 10px); }
     .grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(160px,1fr)); gap: 12px; }
     .thumb img { width: 100%; height: 160px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; }
   .caption { text-align: center; font-size: 0.9em; color: #666; margin-top: 4px; }
@@ -103,7 +132,7 @@
 
     <!-- centered play button overlay -->
     <div class="play-center">
-      <button id="playButton" aria-label="Play audio">►</button>
+      <button id="playButton" aria-label="Play audio" aria-pressed="false"></button>
     </div>
 
     <!-- audio status (diagnostic) -->
@@ -181,7 +210,7 @@
             setStatus('Loading…');
             playPromise.then(() => {
               btn.classList.add('playing');
-              btn.textContent = '❚❚';
+              btn.setAttribute('aria-pressed', 'true');
               setStatus('Playing');
             }).catch(err => {
               console.error('Playback failed:', err);
@@ -206,19 +235,19 @@
           } else {
             // older browsers
             btn.classList.add('playing');
-            btn.textContent = '❚❚';
+            btn.setAttribute('aria-pressed', 'true');
           }
         } else {
           audio.pause();
           btn.classList.remove('playing');
-          btn.textContent = '►';
+          btn.setAttribute('aria-pressed', 'false');
         }
       });
 
       // update button state when audio ends
       audio.addEventListener('ended', function () {
         btn.classList.remove('playing');
-        btn.textContent = '►';
+        btn.setAttribute('aria-pressed', 'false');
         setStatus('Ended', false);
       });
 
