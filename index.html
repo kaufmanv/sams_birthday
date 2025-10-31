@@ -120,44 +120,53 @@
     setStatus('Ready', false);
 
     // Play audio on first click anywhere on the page or play button
-    function playAudioOnce(event) {
+    function toggleAudio(event) {
       // Prevent event bubbling
-      event.stopPropagation();
-      
-      // Log attempt to play
-      console.log('Attempting to play audio...');
-      
-      // Check if audio is loaded
-      if (audio.readyState === 0) {
-        console.log('Audio not loaded yet');
-        setStatus('Loading audio...');
-        audio.load(); // Force load the audio
+      if (event) {
+        event.stopPropagation();
       }
-
-      audio.play().then(() => {
-        console.log('Audio playing successfully');
-        playButton.classList.add('playing');
-        playButton.setAttribute('aria-pressed', 'true');
-        setStatus('Playing');
-      }).catch(err => {
-        console.error('Playback failed:', err);
-        setStatus('Playback failed: ' + err.message);
+      
+      if (audio.paused) {
+        // Play audio
+        console.log('Attempting to play audio...');
         
-        // Try to show more detailed error information
-        if (audio.error) {
-          console.error('Audio error code:', audio.error.code);
-          console.error('Audio error message:', audio.error.message);
+        // Check if audio is loaded
+        if (audio.readyState === 0) {
+          console.log('Audio not loaded yet');
+          setStatus('Loading audio...');
+          audio.load(); // Force load the audio
         }
-      });
 
-      // Remove listeners after first play attempt
-      document.body.removeEventListener('click', playAudioOnce);
-      playButton.removeEventListener('click', playAudioOnce);
+        audio.play().then(() => {
+          console.log('Audio playing successfully');
+          playButton.classList.add('playing');
+          playButton.setAttribute('aria-pressed', 'true');
+          setStatus('Playing');
+        }).catch(err => {
+          console.error('Playback failed:', err);
+          setStatus('Playback failed: ' + err.message);
+          
+          if (audio.error) {
+            console.error('Audio error code:', audio.error.code);
+            console.error('Audio error message:', audio.error.message);
+          }
+        });
+      } else {
+        // Pause audio
+        audio.pause();
+        playButton.classList.remove('playing');
+        playButton.setAttribute('aria-pressed', 'false');
+        setStatus('Paused');
+      }
     }
 
+    // Update play button appearance
+    playButton.innerHTML = '▶';
+    
     // Add click listeners
-    document.body.addEventListener('click', playAudioOnce);
-    playButton.addEventListener('click', playAudioOnce);
+    playButton.addEventListener('click', toggleAudio);
+    // Remove body click listener to prevent unwanted playback
+    document.body.removeEventListener('click', playAudioOnce);
 
     // Reset button state when audio ends
     audio.addEventListener('ended', () => {
