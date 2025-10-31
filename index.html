@@ -30,10 +30,56 @@
       background: #ffffff;
       border-bottom: 1px solid #ddd;
       padding: 16px 24px;
+      position: relative;
+      z-index: 2;
     }
     h1 { margin: 0; font-size: 1.5em; }
     main { max-width: 960px; margin: 24px auto; padding: 0 16px; }
-    section { background: #fff; padding: 16px; border-radius: 8px; box-shadow: 0 0 8px rgba(0,0,0,0.05); margin-bottom: 16px; }
+    section { background: #fff; padding: 16px; border-radius: 8px; box-shadow: 0 0 8px rgba(0,0,0,0.05); margin-bottom: 16px; position: relative; z-index: 2; }
+    /* hide file titles/captions under thumbnails */
+    .caption { display: none; }
+
+    /* page title near top center */
+    .page-title {
+      position: fixed;
+      top: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 2.4rem;
+      font-weight: 700;
+      color: #222;
+      text-align: center;
+      z-index: 9;
+      text-shadow: 0 2px 6px rgba(255,255,255,0.6);
+      pointer-events: none;
+    }
+
+    /* centered play button */
+    .play-center {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      pointer-events: none; /* allow button to control pointer only where the button is */
+    }
+    #playButton {
+      pointer-events: auto;
+      width: 128px;
+      height: 128px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(0,0,0,0.75);
+      color: #fff;
+      font-size: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+      cursor: pointer;
+    }
+    #playButton.playing { background: rgba(200,0,0,0.9); }
     .grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(160px,1fr)); gap: 12px; }
     .thumb img { width: 100%; height: 160px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; }
     .caption { text-align: center; font-size: 0.9em; color: #666; margin-top: 4px; }
@@ -45,6 +91,7 @@
   <header>
     <!-- title intentionally removed to keep sections untitled -->
   </header>
+  <div class="page-title">Samuel's birthday</div>
   <main>
     <section>
       <div id="gallery" class="grid"></div>
@@ -53,6 +100,11 @@
     <section aria-label="audio">
       <div id="audioArea"></div>
     </section>
+
+    <!-- centered play button overlay -->
+    <div class="play-center">
+      <button id="playButton" aria-label="Play audio">►</button>
+    </div>
 
     <footer>
       © 2025 My Media Gallery — hosted on Netlify
@@ -89,14 +141,34 @@
     }
 
     function loadAudio() {
-      const audioName = audioFile.split('/').pop();
-      audioArea.innerHTML = `
-        <p>${audioName}</p>
-        <audio controls>
-          <source src="${audioFile}" type="audio/mpeg">
-          Your browser does not support the audio element.
-        </audio>
-      `;
+      // create a hidden audio element controlled by the central play button
+      const audio = document.createElement('audio');
+      audio.id = 'mainAudio';
+      audio.style.display = 'none';
+      const src = document.createElement('source');
+      src.src = audioFile;
+      src.type = 'audio/mpeg';
+      audio.appendChild(src);
+      audioArea.appendChild(audio);
+
+      const btn = document.getElementById('playButton');
+      btn.addEventListener('click', function () {
+        if (audio.paused) {
+          audio.play();
+          btn.classList.add('playing');
+          btn.textContent = '❚❚';
+        } else {
+          audio.pause();
+          btn.classList.remove('playing');
+          btn.textContent = '►';
+        }
+      });
+
+      // update button state when audio ends
+      audio.addEventListener('ended', function () {
+        btn.classList.remove('playing');
+        btn.textContent = '►';
+      });
     }
 
     loadImages();
