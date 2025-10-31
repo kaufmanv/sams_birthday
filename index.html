@@ -86,6 +86,8 @@
   /* hide the gallery element so thumbnails don't show */
   #gallery { display: none; }
     audio { width: 100%; margin-top: 8px; }
+    /* small status area for audio diagnostics */
+    #audioStatus { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); color: #fff; padding: 6px 10px; border-radius: 6px; font-size: 0.9rem; z-index: 11; pointer-events: none; }
     footer { text-align: center; font-size: 0.8em; color: #777; margin-top: 24px; padding: 12px; }
   </style>
 </head>
@@ -104,6 +106,9 @@
       <button id="playButton" aria-label="Play audio">►</button>
     </div>
 
+    <!-- audio status (diagnostic) -->
+    <div id="audioStatus" aria-live="polite" hidden>Ready</div>
+
     <footer>
       © 2025 My Media Gallery — hosted on Netlify
     </footer>
@@ -113,8 +118,8 @@
     // Automatically load media from ./media/ folder
     // To make this work on Netlify, ensure you upload the media folder next to index.html.
 
-    //const gallery = document.getElementById('gallery');
-    //const audioArea = document.getElementById('audioArea');
+  const gallery = document.getElementById('gallery');
+  const audioArea = document.getElementById('audioArea');
 
     // You can edit these lists manually if needed.
     const imageFiles = [
@@ -124,6 +129,7 @@
     const audioFile = 'media/1031.mp3';
 
     function loadImages() {
+      if (!gallery) return; // gallery may be hidden/removed; avoid runtime error
       if (imageFiles.length === 0) {
         gallery.innerHTML = '<p style="color:#888">No images found in media/ folder.</p>';
         return;
@@ -139,22 +145,69 @@
     }
 
     function loadAudio() {
-      // create a hidden audio element controlled by the central play button
+      // create a hidden-but-loadable audio element controlled by the central play button
       const audio = document.createElement('audio');
       audio.id = 'mainAudio';
-      audio.style.display = 'none';
+      // prefer preload and keep element detectable by the browser (avoid display:none)
+      audio.preload = 'auto';
+      audio.setAttribute('preload', 'auto');
+      // keep it visually hidden but loadable
+      audio.style.width = '0';
+      audio.style.height = '0';
+      audio.style.opacity = '0';
+      audio.style.position = 'absolute';
+      audio.style.left = '-9999px';
+
       const src = document.createElement('source');
       src.src = audioFile;
       src.type = 'audio/mpeg';
       audio.appendChild(src);
       audioArea.appendChild(audio);
+      // force load attempt
+      try { audio.load(); } catch (e) { console.warn('audio.load() failed', e); }
 
       const btn = document.getElementById('playButton');
+      const status = document.getElementById('audioStatus');
+      function setStatus(text, visible = true) {
+        if (!status) return;
+        status.textContent = text;
+        status.hidden = !visible;
+      }
+      setStatus('Ready', false);
       btn.addEventListener('click', function () {
         if (audio.paused) {
-          audio.play();
-          btn.classList.add('playing');
-          btn.textContent = '❚❚';
+          const playPromise = audio.play();
+          if (playPromise !== undefined) {
+            setStatus('Loading…');
+            playPromise.then(() => {
+              btn.classList.add('playing');
+              btn.textContent = '❚❚';
+              setStatus('Playing');
+            }).catch(err => {
+              console.error('Playback failed:', err);
+              setStatus('Playback failed (see console)');
+              // show a simple message to the user
+              alert('Audio could not start. Check console/network or browser autoplay settings.');
+              // Fallback: create a visible native audio control for debugging/testing
+              if (!document.getElementById('nativeAudio')) {
+                const vis = audio.cloneNode(true);
+                vis.id = 'nativeAudio';
+                vis.controls = true;
+                // reset hidden styles so it is visible and usable
+                vis.style.position = '';
+                vis.style.left = '';
+                vis.style.width = '100%';
+                vis.style.height = 'auto';
+                vis.style.opacity = '';
+                audioArea.appendChild(vis);
+                setStatus('Showing native controls for debugging');
+              }
+            });
+          } else {
+            // older browsers
+            btn.classList.add('playing');
+            btn.textContent = '❚❚';
+          }
         } else {
           audio.pause();
           btn.classList.remove('playing');
@@ -166,7 +219,14 @@
       audio.addEventListener('ended', function () {
         btn.classList.remove('playing');
         btn.textContent = '►';
+        setStatus('Ended', false);
       });
+
+      audio.addEventListener('canplay', function () { setStatus('Ready to play'); });
+      audio.addEventListener('playing', function () { setStatus('Playing'); });
+      audio.addEventListener('pause', function () { setStatus('Paused', false); });
+      audio.addEventListener('loadeddata', function () { setStatus('Loaded'); });
+      audio.addEventListener('error', function (e) { setStatus('Audio error (see console)'); console.error('Audio error event', e); });
     }
 
     loadImages();
