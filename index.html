@@ -1,4 +1,4 @@
-<!-- starter-webpage-gallery.html (central play button + visible audio for reliable playback on Vercel) -->
+<!-- starter-webpage-gallery.html (click anywhere to play sound + visible audio) -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -13,6 +13,7 @@
       color: #222;
       margin: 0;
       padding: 0;
+      cursor: pointer;
     }
     body::after {
       content: '';
@@ -82,12 +83,6 @@
       z-index: 11;
       pointer-events: none;
     }
-    #mainAudio {
-      width: 320px;
-      margin: 24px auto;
-      display: block;
-      z-index: 11;
-    }
   </style>
 </head>
 <body>
@@ -97,7 +92,7 @@
     <section aria-label="audio">
       <div id="audioArea">
         <!-- Visible audio element -->
-        <audio id="mainAudio" controls preload="auto">
+        <audio id="mainAudio" preload="auto">
           <source src="media/1031.mp3" type="audio/mpeg">
           Your browser does not support the audio element.
         </audio>
@@ -123,24 +118,24 @@
 
     setStatus('Ready', false);
 
-    // Play/pause via central button
-    playButton.addEventListener('click', () => {
-      if (audio.paused) {
-        audio.play().then(() => {
-          playButton.classList.add('playing');
-          playButton.setAttribute('aria-pressed', 'true');
-          setStatus('Playing');
-        }).catch(err => {
-          console.error('Playback failed', err);
-          setStatus('Playback failed. Use native controls below.');
-          alert('Playback failed — click the audio controls below if needed.');
-        });
-      } else {
-        audio.pause();
-        playButton.classList.remove('playing');
-        playButton.setAttribute('aria-pressed', 'false');
-      }
-    });
+    // Play audio on first click anywhere on the page or play button
+    function playAudioOnce() {
+      audio.play().then(() => {
+        playButton.classList.add('playing');
+        playButton.setAttribute('aria-pressed', 'true');
+        setStatus('Playing');
+      }).catch(err => {
+        console.error('Playback failed:', err);
+        setStatus('Playback failed');
+        alert('Click the audio controls below if needed.');
+      });
+      // Remove listeners after first play
+      document.body.removeEventListener('click', playAudioOnce);
+      playButton.removeEventListener('click', playAudioOnce);
+    }
+
+    document.body.addEventListener('click', playAudioOnce);
+    playButton.addEventListener('click', playAudioOnce);
 
     // Reset button state when audio ends
     audio.addEventListener('ended', () => {
